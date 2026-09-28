@@ -12,13 +12,13 @@ steps:
     command: 'buildAndPush'
     repository: 'docker-webserver'
     dockerfile: 'Dockerfile'
-    containerRegistry: 'acr-docker-cicd'
+    containerRegistry: 'acr-connection'
     tags: |
       latest
 
 - task: AzureWebAppContainer@1
   displayName: 'Deploy to Azure App Service'
   inputs:
-    azureSubscription: 'azure-cicd-connection'
+    azureSubscription: 'azurecicd-connection'
     appName: 'deesaxdockeracr'
     containers: 'deesaxdockeracr.azurecr.io/docker-webserver:latest'
