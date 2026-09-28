@@ -1,85 +1,107 @@
-# Docker Web Server Deployment
+# Azure CI/CD Pipeline with Docker and Azure
 
 ## Project Overview
-This project demonstrates the deployment and management of a web server using Docker and Nginx. A custom HTML webpage was containerized and deployed using Docker, with health monitoring and lifecycle management practiced throughout.
+
+This project demonstrates the implementation of an automated CI/CD pipeline using **Azure DevOps**, **Docker**, **Azure Container Registry (ACR)** and **Azure App Service**.
+
+The pipeline automates the process of building a Docker image, pushing it to Azure Container Registry and deploying the application to Azure App Service whenever changes are pushed to the `main` branch of the GitHub repository.
+
+The project uses a simple Nginx web server to demonstrate the deployment workflow.
+
+## Live Application
+
+**Try the deployed application here:**
+
+[**View Live Website**] https://deesaxdockeracr-f7dwdjaygzcgevbn.westus3-01.azurewebsites.net/
 
 ## Technologies Used
-- Docker
-- Nginx
-- HTML
-- Linux/WSL
 
-## Prerequisites
-- Docker Desktop / Docker Engine installed
-- Tested on WSL2 (Ubuntu)
+* **Azure DevOps:** For creating and managing the CI/CD pipeline.
+* **Azure Pipelines:** For automating the build and deployment process.
+* **Docker:** For containerizing the Nginx web server.
+* **Azure Container Registry (ACR):** For storing Docker images.
+* **Azure App Service:** For hosting and running the containerized application.
+* **GitHub:** For source code management and triggering pipeline runs.
+* **YAML:** For defining the pipeline configuration.
+* **Nginx:** As the web server serving the application.
 
-## Project Workflow
-1. Pulled the official Nginx Docker image from Docker Hub.
-2. Created and managed an Nginx container.
-3. Practiced the Docker container lifecycle.
-4. Created a custom HTML webpage.
-5. Built a custom Docker image using a Dockerfile, copying the webpage into the image.
-6. Deployed the custom image as a container.
-7. Monitored the container using Docker logs, inspect, and stats.
-8. Added a Docker health check.
-9. Simulated and resolved a container issue (see Troubleshooting below).
+## Architecture and Workflow
 
-## Dockerfile
-```dockerfile
-FROM nginx:1.23
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
-COPY html /usr/share/nginx/html
-HEALTHCHECK --interval=30s --timeout=5s CMD curl -f http://localhost/ || exit 1
+The project follows this automated deployment workflow:
+
+1. **Source Code:** The application code and Dockerfile are stored in GitHub.
+2. **Continuous Integration:** A push to the `main` branch triggers Azure Pipelines.
+3. **Docker Build:** Azure Pipelines builds a Docker image using the project's Dockerfile.
+4. **Image Storage:** The generated Docker image is pushed to Azure Container Registry.
+5. **Continuous Deployment:** Azure Pipelines deploys the container image to Azure App Service.
+6. **Live Application:** The deployed Nginx web server serves the application through a public URL.
+
+### Deployment Flow
+
+`GitHub → Azure Pipelines → Docker Build → Azure Container Registry → Azure App Service → Live Website`
+
+## Project Structure
+
+```text
+azure-cicd-pipeline/
+├── Dockerfile
+├── index.html
+├── README.md
+└── azure-pipelines.yml
 ```
 
-## How to Run
-```bash
-# Build the image
-docker build -t my-docker-web-server
+* **Dockerfile:** Defines how the Nginx application is packaged into a Docker image.
+* **index.html:** Contains the web page served by Nginx.
+* **azure-pipelines.yml:** Defines the automated build, image-push and deployment stages.
+* **README.md:** Documents the project and its deployment workflow.
 
-# Run the container
-docker run -d -p 8082:80 --name my-custom-website my-webserver
-```
-Then open `http://localhost:8082` in your browser to view the custom page.
+## CI/CD Pipeline
 
-## Docker Commands Used
-```bash
-docker pull nginx        # Pull the base image from Docker Hub
-docker build             # Build the custom image from the Dockerfile
-docker run               # Create and start a new container
-docker ps                # List running containers
-docker ps -a             # List all containers, including stopped ones
-docker images            # List local images
-docker stop               # Stop a running container
-docker start               # Start a stopped container
-docker restart             # Restart a container
-docker pause / unpause     # Pause and resume a container
-docker logs               # View container logs
-docker inspect            # View detailed container/image metadata
-docker stats              # View live resource usage (CPU, memory)
-docker exec -it <name> sh # Open a shell inside a running container
-```
+The pipeline is configured in `azure-pipelines.yml` and consists of two main tasks:
 
-## Health Monitoring
-A `HEALTHCHECK` instruction was added to the Dockerfile so Docker periodically verifies the web server is actually responding, not just that the process is running. This is visible in the `STATUS` column of `docker ps` (shows `healthy` after the first check interval) and in the `Health` section of `docker inspect`.
+### 1. Build and Push Docker Image
 
-## Troubleshooting Example
-To practice real-world debugging, the webpage file was deliberately deleted from inside the running container:
-```bash
-docker exec -it my-custom-website rm /usr/share/nginx/html/index.html
-```
-This caused the site to return a 403/404 error in the browser. The issue was diagnosed using:
-```bash
-docker logs my-custom-website
-docker exec -it my-custom-website sh
-```
-The container was accessed directly to confirm the missing file, and the page was restored by rebuilding and redeploying the container from the original image.
+The `Docker@2` task builds the Docker image from the Dockerfile and pushes it to Azure Container Registry using an Azure DevOps service connection.
 
-## Best Practices Applied
-- Pinned the base image to a specific version (`nginx:1.23`) instead of `latest`, for reproducibility.
-- Cleaned up the `apt-get` package cache in the same `RUN` layer to keep the image size down.
-- Added a `HEALTHCHECK` so container health is monitored automatically rather than assumed.
-- Used official, minimal base images rather than a general-purpose OS image.
+The image is tagged as `latest`.
 
-## What I Learned
-This project introduced me to several new Docker concepts, including how to add a health check to a container, how monitoring commands like `stats` and `inspect` work in practice, and how to diagnose and recover from a broken container using `logs` and `exec`. It also reinforced the full container lifecycle beyond just starting and stopping a container.
+### 2. Deploy to Azure App Service
+
+The `AzureWebAppContainer@1` task deploys the container image from Azure Container Registry to Azure App Service.
+
+This allows the application to be updated automatically when a new pipeline run completes successfully.
+
+## Deployment and Testing
+
+The pipeline was tested by updating the application's HTML content and pushing the changes to GitHub.
+
+The resulting pipeline run successfully built and pushed the Docker image and deployed it to Azure App Service. The updated content was then verified on the live website.
+
+## Key Concepts Learned
+
+* Continuous Integration (CI) and Continuous Deployment (CD)
+* YAML-based pipeline configuration
+* Automated Docker image building and publishing
+* Container image management with Azure Container Registry
+* Automated application deployment with Azure App Service
+* GitHub-triggered pipeline execution
+* Azure DevOps service connections
+* Monitoring pipeline execution and verifying deployments
+
+## Challenges Encountered
+
+During the project, an Azure App Service quota restriction initially prevented the creation of the hosting resource in the selected region. The subscription was upgraded to Pay-As-You-Go to proceed with the deployment.
+
+The pipeline was subsequently configured and tested successfully.
+
+## Project Outcome
+
+Successfully implemented and tested an automated CI/CD pipeline that builds a Docker image, pushes it to Azure Container Registry and deploys the application to Azure App Service.
+
+The application is publicly accessible through the live URL above.
+
+## Author
+
+**Akinloye Oluwadara**
+
+[GitHub Profile](https://github.com/Akinloyedee)
